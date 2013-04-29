@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="author" content="BaDen"/>
+  <meta name="description" content=""/>
+  <meta name="viewport" content="width=device-width" initial-scale="1.0"/>
+
+  <style type="text/css">
+    div {
+      margin-top: 10px;
+    }
+    .info {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      background-color: #eee;
+    }
+  </style>
+  </script>
+</head>
+<body onload="initialize()">
+  <div class="cmdbtnpanel">
+    <div class="info" style="">
+      IMEI: <input id="imei" value="test-01"></input><br/>
+      Телефон: <input id="phone" value="+380670322322"></input><br/>
+      Сервер:
+      <select name="server" id="server" value="http://localhost:8181">
+        <option value="http://localhost:8181">Локальный</option>
+        <option value="http://point.newgps.navi.cc">Боевой</option>
+        <!--option value="http://point.gps.navi.cc">За деньги!!!</option-->
+      </select>
+    </div>
+    <div class="cmd">
+      <button id="sendLog">Отправить тестовое сообщение</button>
+      <input type="text" id="logsample" placeholder="Пример сообщения" value="Sample">
+    </div>
+    <div class="cmd">
+      <button id="sendAlarm">Отправить тревожное сообщение</button>
+      <input type="text" id="alarmsample" placeholder="Пример сообщения" value="Спасите, помогите!!!">
+    </div>
+    <div class="cmd">
+      <button id="sendConfig">Отправить пример конфигурации</button>
+    </div>
+    <div class="cmd">
+      <button id="send100">Отправить 100 сообщений для систем test-00..test-99</button>
+    </div>
+  </div>
+  <script type="text/javascript">
+  window.URL = window.URL || window.webkitURL;
+
+  function initialize() {
+    var IMEI = "test-01";
+
+    document.getElementById("imei").oninput = function(){
+      IMEI = this.value;
+    }
+
+    document.getElementById('sendLog').addEventListener('click', function(){
+      var message = document.getElementById('logsample').value;
+      console.log(['Send Log', message]);
+      SimpleGet('addlog', '&text=' + encodeURIComponent(message));
+    }, false);
+
+
+    document.getElementById('sendConfig').addEventListener('click', function(){
+      config = '';
+      for(var i=0; i<10; i++) {
+        config += 'param.int.' + i + ' INT ' + i + ' ' + i + '\r\n';
+        config += 'param.long' + i + ' LONG ' + i + ' ' + i + '\r\n';
+        config += 'param.str16' + i + ' STR16 "' + i + '" "' + i + '"\r\n';
+        config += 'param.str32' + i + ' STR32 "' + i + '" "' + i + '"\r\n';
+      }
+      config += 'END\r\n';
+      console.log(['Send Config', config]);
+      SimplePOST('config', '&cmd=save', config);
+    }, false);
+
+
+    document.getElementById('send100').addEventListener('click', function(){
+      var oldIMEI = IMEI;
+      for(var i=0; i<100; i++){
+        if(i<10) {
+          IMEI = 'test-0' + i;
+        } else {
+          IMEI = 'test-' + i;
+        }
+        dt = new Date();
+        message = 'Message at ' + dt + ' for ' + IMEI;
+        SimpleGet('addlog', '&text=' + encodeURIComponent(message));
+      }
+      IMEI = oldIMEI;
+    }, false);
+
+    var dt = new Date();
+
+    var SimpleGet = function(path, params) {
+      var req = new XMLHttpRequest();
+      var url = document.getElementById("server").value;
+      req.open("GET", url + "/" + path + "?imei=" + IMEI + params, true);
+      // set headers and mime-type appropriately
+      //req.setRequestHeader("Content-Length", pack_len + 2);
+      //req.setRequestHeader('Content-Type', 'application/octet-stream')
+      //req.send(packet);
+      req.send();
+    }
+
+    var SimplePOST = function(path, params, payload) {
+      var req = new XMLHttpRequest();
+      var url = document.getElementById("server").value;
+      req.open("POST", url + "/" + path + "?imei=" + IMEI + params, true);
+      // set headers and mime-type appropriately
+      req.setRequestHeader("Content-Length", payload.length);
+      req.setRequestHeader('Content-Type', 'application/octet-stream')
+      req.send(payload);
+    }
+
+    var SaveConfig = function() {
+      var req = new XMLHttpRequest();
+      var url = document.getElementById("server").value;
+      req.open("POST", url + "/bingps?imei=" + IMEI, true);
+      // set headers and mime-type appropriately
+      req.setRequestHeader("Content-Length", pack_len + 2);
+      req.setRequestHeader('Content-Type', 'application/octet-stream')
+      //req.send(packet);
+      req.send(uInt8Array);
+
+      //console.log("step", rabbit_pos, p, IMEI, packet, dv, crc, uInt8Array);
+
+    };
+  }
+
+  </script>
+</body>
+</html>
